@@ -16,7 +16,8 @@ def create_chain():
 
     context_retriever = retriever
     llm = ChatOllama(
-    model="qwen2.5:0.5b")
+    model="qwen2.5:0.5b",
+    base_url="http://host.docker.internal:11434")
 
     chain = ({"context": context_retriever, "question": RunnablePassthrough()} 
              | system_prompt    
