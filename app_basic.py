@@ -10,8 +10,7 @@ from langchain_core.output_parsers import StrOutputParser
 
 
 load_dotenv()
-
-
+st.title("Assistente RAG — Políticas Internas")
 
 #LÓGICA DO RAG
 def load_pdf():
@@ -34,11 +33,20 @@ def block_splitter(document):
 blocks = block_splitter(document)
 
 
+#EMBEDDING 
+def create_vectorstore(blocks):
+    embedding = OllamaEmbeddings(model="bge-m3")
+    vectorstore = FAISS.from_documents(blocks,embedding)
+    return vectorstore
+
+vectorstore = create_vectorstore(blocks)
+retriever = vectorstore.as_retriever()
 
 #LÓGICA DO AGENTE DE IA
-def create_chain():
+@st.cache_resource
+def create_chain(vectorstore):
 
-    system_prompt= ChatPromptTemplate.from_template("""Você é um assistente de RH que responde perguntas sobre as
+    system_prompt = ChatPromptTemplate.from_template("""Você é um assistente de RH que responde perguntas sobre as
     políticas internas da empresa. use APENAS as informações do context abaixo para responder.
     Se não encontrar a resposta, diga claramente que não sabe responder.
     Responda em português do Brasil, de forma clara e objetiva.
@@ -46,24 +54,20 @@ def create_chain():
     pergunta: {answer} 
     resposta: """)
 
-    def create_context(user_prompt):
-        return 
-
+    context_retriever = retriever
     llm = ChatOllama(
-    model="qwen2.5:0.5b"
-)
-    chain =(
-        {"context": create_context, "answer": RunnablePassthrough()}
-            | system_prompt
-            | llm
-            | StrOutputParser())
+    model="qwen2.5:0.5b")
+
+    chain = ({"context": context_retriever, "question": RunnablePassthrough()} 
+             | system_prompt    
+             | llm
+             | StrOutputParser())
+
 
     return chain
 
-
-
 # INTERFACE
-st.title("Assistente RAG — Políticas Internas")
+
 
 # carregar chain e vector store
 chain = create_chain()
