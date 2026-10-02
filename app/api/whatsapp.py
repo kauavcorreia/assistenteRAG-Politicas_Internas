@@ -4,6 +4,8 @@ from typing import Any
 import requests
 from fastapi import APIRouter, status
 
+from app.rag.chain import create_chain
+
 router = APIRouter()
 
 WAHA_URL = os.getenv("WAHA_URL", "http://waha:3000")
@@ -33,10 +35,10 @@ async def whatsapp_webhook(data: dict[str, Any]):
     print(f"Mensagem recebida: {message}")
     print(f"Chat ID: {chat_id}")
 
-    send_message(
-        chatid=chat_id,
-        text=f"Recebi sua mensagem: {message}"
-    )
+    chain = create_chain()
+    response = chain.invoke(message)
+
+    send_message(chatid=chat_id, text=response)
 
     return {"success": True}
 
