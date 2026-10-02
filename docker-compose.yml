@@ -6,3 +6,19 @@ services:
       - "8001:8000"
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    environment:
+      - WAHA_API_KEY=${WAHA_API_KEY}
+
+  waha:
+    image: devlikeapro/waha
+    container_name: waha
+    restart: always
+    ports:
+      - "3000:3000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - WAHA_API_KEY=${WAHA_API_KEY}
+      - WHATSAPP_DEFAULT_ENGINE=WEBJS
+    volumes:
+      - ./.sessions:/app/.sessions

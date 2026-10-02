@@ -1,17 +1,72 @@
+import os
+from typing import Any
+
 import requests
+from fastapi import APIRouter, status
 
-url = "http://localhost:3000/api/sendText"
-headers = {
-    "Accept": "application/json",
-    "Content-Type": "application/json",
-    "X-Api-Key": "de5bc4c3699e43569ada944055262e15"
-}
-data = {
-    "chatId": "81991170061@c.us",
-    "text": "Hi there!",
-    "session": "default"
-}
+router = APIRouter()
 
-response = requests.post(url, json=data, headers=headers)
+WAHA_URL = os.getenv("WAHA_URL", "http://waha:3000")
+WAHA_API_KEY = os.getenv("WAHA_API_KEY")
+
+
+@router.post("/webhook", status_code=status.HTTP_200_OK)
+async def whatsapp_webhook(data: dict[str, Any]):
+    print("Evento recebido do WAHA:")
+    print(data)
+
+    if data.get("event") != "message.any":
+        return {"success": True}
+
+    payload = data.get("payload", {})
+
+    if payload.get("fromMe"):
+        print("Mensagem enviada pelo próprio bot. Ignorando.")
+        return {"success": True}
+
+    message = payload.get("body")
+    chat_id = payload.get("from")
+
+    if not message or not chat_id:
+        return {"success": True}
+
+    print(f"Mensagem recebida: {message}")
+    print(f"Chat ID: {chat_id}")
+
+    send_message(
+        chatid=chat_id,
+        text=f"Recebi sua mensagem: {message}"
+    )
+
+    return {"success": True}
+
+
+def send_message(chatid: str, text: str):
+    url = f"{WAHA_URL}/api/sendText"
+
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "X-Api-Key": WAHA_API_KEY
+    }
+
+    data = {
+        "chatId": chatid,
+        "text": text,
+        "session": "default"
+    }
+
+    response = requests.post(
+        url,
+        json=data,
+        headers=headers,
+    )
+
+    response.raise_for_status()
+
+    return response.json()
+
+    
+
 
 
